@@ -6,7 +6,7 @@ import { basemapLanguage } from './glProviders'
  * The vector source decides which translations are available.
  */
 type VectorMap = {
-  getStyle: () => { layers?: Array<{ id: string; type: string; layout?: { 'text-field'?: unknown } }> } | undefined
+  getStyle: () => unknown
   setLayoutProperty: (id: string, property: string, value: unknown) => unknown
 }
 
@@ -37,7 +37,8 @@ export function localizeVectorLabels(map: VectorMap, uiLanguage: string | undefi
     originals = new Map()
     originalFields.set(map, originals)
   }
-  for (const layer of map.getStyle()?.layers ?? []) {
+  const style = map.getStyle() as { layers?: Array<{ id: string; type: string; layout?: { 'text-field'?: unknown } }> } | undefined
+  for (const layer of style?.layers ?? []) {
     if (layer.type !== 'symbol' || !layer.layout?.['text-field']) continue
     if (!originals.has(layer.id)) originals.set(layer.id, layer.layout['text-field'])
     const original = originals.get(layer.id)
