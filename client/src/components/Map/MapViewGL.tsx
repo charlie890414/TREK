@@ -28,6 +28,7 @@ import { visibleRouteReservations } from '../../utils/reservationRoutes'
 import { safeHexColor } from '../../utils/safeColor'
 import { MAPBOX_DEFAULT_STYLE, styleForActiveProvider, basemapLanguage, type GlMapProvider } from './glProviders'
 import { buildGlMap, initialMapStyle } from './glSupport'
+import { bindVectorLabelLanguage } from './mapLabelLanguage'
 import { mapboxTileCacheRequest, tileCacheActive } from '../../native/tileCache'
 import LocationButton from './LocationButton'
 import { useIsPhone } from '../../mobile/useIsPhone'
@@ -960,7 +961,10 @@ export function MapViewGL({
       attributionControl: true,
       antialias: mapboxQuality,
     }
-    if (!isMapLibre) mapOptions.projection = mapboxQuality ? 'globe' : 'mercator'
+    if (!isMapLibre) {
+      mapOptions.projection = mapboxQuality ? 'globe' : 'mercator'
+      mapOptions.language = basemapLanguage(mapLang)
+    }
     // In the iOS app, Mapbox's own resources go through the app's tile store, so
     // what was viewed stays on the device for up to 30 days (native/tileCache.ts).
     if (!isMapLibre && tileCacheActive()) mapOptions.transformRequest = mapboxTileCacheRequest
@@ -971,6 +975,9 @@ export function MapViewGL({
     const map = buildGlMap(() => new gl.Map(mapOptions as any))
     if (!map) return
     mapRef.current = map
+    if (isMapLibre) {
+      bindVectorLabelLanguage(map, () => useSettingsStore.getState().settings.language, useSettingsStore.subscribe)
+    }
     popupRef.current = new gl.Popup({
       closeButton: false,
       closeOnClick: false,
@@ -1458,8 +1465,8 @@ export function MapViewGL({
   // are left as-is. Runs on load (mapReady) and whenever the UI language changes.
   useEffect(() => {
     const map = mapRef.current
-    if (!map || !mapReady || isMapLibre || !isStandardFamily(glStyle)) return
-    try { map.setConfigProperty('basemap', 'language', basemapLanguage(mapLang)) } catch { /* style/SDK may not support the basemap language property */ }
+    if (!map || !mapReady || isMapLibre) return
+    try { map.setLanguage(basemapLanguage(mapLang)) } catch { /* style/SDK may not support language switching */ }
   }, [mapLang, mapReady, isMapLibre, glStyle])
 
   // Photo loading, shared with the Leaflet MapView.
