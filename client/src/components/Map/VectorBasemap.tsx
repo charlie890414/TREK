@@ -13,6 +13,8 @@ import { isChunkLoadError, reloadOnceForChunk } from '../../utils/chunkReload'
 import { offlineStyle } from '../../native/offlineTiles'
 import { isNativeIos } from '../../native/platform'
 import { nativeRasterTemplate } from '../../native/tileCache'
+import { useSettingsStore } from '../../store/settingsStore'
+import { bindVectorLabelLanguage } from './mapLabelLanguage'
 
 /** The Leaflet layer maplibre-gl-leaflet hands back. */
 export type GlLeafletLayer = InstanceType<typeof MaplibreGL>
@@ -106,6 +108,8 @@ function attachGlLayer(map: L.Map, layer: GlLeafletLayer, style: string): boolea
     return false
   }
   creditBasemap(map, style)
+  const vectorMap = layer.getMaplibreMap?.()
+  if (vectorMap) bindVectorLabelLanguage(vectorMap, () => useSettingsStore.getState().settings.language, useSettingsStore.subscribe)
   return true
 }
 
