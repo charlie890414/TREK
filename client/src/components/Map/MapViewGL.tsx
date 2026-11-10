@@ -1466,7 +1466,7 @@ export function MapViewGL({
   useEffect(() => {
     const map = mapRef.current
     if (!map || !mapReady || isMapLibre) return
-    try { map.setLanguage(basemapLanguage(mapLang)) } catch { /* style/SDK may not support language switching */ }
+    try { (map as mapboxgl.Map).setLanguage(basemapLanguage(mapLang)) } catch { /* style/SDK may not support language switching */ }
   }, [mapLang, mapReady, isMapLibre, glStyle])
 
   // Photo loading, shared with the Leaflet MapView.
