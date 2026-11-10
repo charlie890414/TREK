@@ -4,6 +4,7 @@ import { useSettingsStore } from '../../store/settingsStore'
 import { isStandardFamily, supportsCustom3d, wantsTerrain, addCustom3dBuildings, addTerrainAndSky } from '../Map/mapboxSetup'
 import { MAPBOX_DEFAULT_STYLE, styleForActiveProvider, basemapLanguage, type GlMapProvider } from '../Map/glProviders'
 import { buildGlMap, initialMapStyle } from '../Map/glSupport'
+import { bindVectorLabelLanguage } from '../Map/mapLabelLanguage'
 import { mapboxTileCacheRequest, tileCacheActive } from '../../native/tileCache'
 import type { JourneyTrack } from '@trek/shared'
 import { SHOT_INDEX_ATTR, ensureJourneyPopupStyle, formatMarkerDate, journeyPopupHtml } from './journeyMapPopup'
@@ -407,7 +408,10 @@ function JourneyMapGL(
       attributionControl: { compact: true },
       antialias: mapboxQuality,
     }
-    if (!isMapLibre) mapOptions.projection = mapboxQuality ? 'globe' : 'mercator'
+    if (!isMapLibre) {
+      mapOptions.projection = mapboxQuality ? 'globe' : 'mercator'
+      mapOptions.language = basemapLanguage(mapLangRef.current)
+    }
     // In the iOS app, Mapbox's own resources go through the app's tile store, so
     // what was viewed stays on the device for up to 30 days (native/tileCache.ts).
     if (!isMapLibre && tileCacheActive()) mapOptions.transformRequest = mapboxTileCacheRequest
@@ -419,6 +423,9 @@ function JourneyMapGL(
     const map = buildGlMap(() => new gl.Map(mapOptions as any))
     if (!map) return
     mapRef.current = map
+    if (isMapLibre) {
+      bindVectorLabelLanguage(map, () => useSettingsStore.getState().settings.language, useSettingsStore.subscribe)
+    }
     marksFramedRef.current = false
     entryPointsRef.current = [...items.map(i => [i.lng, i.lat] as [number, number]), ...stableTrail.map(p => [p.lng, p.lat] as [number, number])]
     readerMovedRef.current = false
@@ -443,8 +450,8 @@ function JourneyMapGL(
       }
       // Pin the basemap label language to the UI language so labels don't fall back to the
       // browser/OS locale and stack multiple scripts per place (#1299).
-      if (!isMapLibre && isStandardFamily(glStyle)) {
-        try { map.setConfigProperty('basemap', 'language', basemapLanguage(mapLangRef.current)) } catch { /* style/SDK may not support it */ }
+      if (!isMapLibre) {
+        try { map.setLanguage(basemapLanguage(mapLangRef.current)) } catch { /* style/SDK may not support language switching */ }
       }
 
       // The faint line between the entries in their order, left off the stretches
@@ -674,8 +681,8 @@ function JourneyMapGL(
   // the map down. The load handler covers the initial run.
   useEffect(() => {
     const map = mapRef.current
-    if (!map || isMapLibre || !isStandardFamily(glStyle)) return
-    try { map.setConfigProperty('basemap', 'language', basemapLanguage(mapLang)) } catch { /* style/SDK may not support it */ }
+    if (!map || isMapLibre) return
+    try { map.setLanguage(basemapLanguage(mapLang)) } catch { /* style/SDK may not support language switching */ }
   }, [mapLang, isMapLibre, glStyle])
 
   // external activeMarkerId → highlight + flyTo
