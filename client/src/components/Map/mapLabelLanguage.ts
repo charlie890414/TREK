@@ -37,7 +37,8 @@ export function localizeVectorLabels(map: VectorMap, uiLanguage: string | undefi
     originals = new Map()
     originalFields.set(map, originals)
   }
-  const style = map.getStyle() as { layers?: Array<{ id: string; type: string; layout?: { 'text-field'?: unknown } }> } | undefined
+  let style: { layers?: Array<{ id: string; type: string; layout?: { 'text-field'?: unknown } }> } | undefined
+  try { style = map.getStyle() as typeof style } catch { return /* style not ready yet */ }
   for (const layer of style?.layers ?? []) {
     if (layer.type !== 'symbol' || !layer.layout?.['text-field']) continue
     if (!originals.has(layer.id)) originals.set(layer.id, layer.layout['text-field'])
