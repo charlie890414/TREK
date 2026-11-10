@@ -451,7 +451,7 @@ function JourneyMapGL(
       // Pin the basemap label language to the UI language so labels don't fall back to the
       // browser/OS locale and stack multiple scripts per place (#1299).
       if (!isMapLibre) {
-        try { map.setLanguage(basemapLanguage(mapLangRef.current)) } catch { /* style/SDK may not support language switching */ }
+        try { (map as mapboxgl.Map).setLanguage(basemapLanguage(mapLangRef.current)) } catch { /* style/SDK may not support language switching */ }
       }
 
       // The faint line between the entries in their order, left off the stretches
@@ -682,7 +682,7 @@ function JourneyMapGL(
   useEffect(() => {
     const map = mapRef.current
     if (!map || isMapLibre) return
-    try { map.setLanguage(basemapLanguage(mapLang)) } catch { /* style/SDK may not support language switching */ }
+    try { (map as mapboxgl.Map).setLanguage(basemapLanguage(mapLang)) } catch { /* style/SDK may not support language switching */ }
   }, [mapLang, isMapLibre, glStyle])
 
   // external activeMarkerId → highlight + flyTo
